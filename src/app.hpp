@@ -83,8 +83,10 @@ struct App {
             filled.clear();
             break;
         case AppMode_Edit:
-            selected_point = nearest_point;
-            mode = AppMode_Dragging;
+            if (nearest_point != -1) {
+                selected_point = nearest_point;
+                mode = AppMode_Dragging;
+            }
             break;
         case AppMode_Dragging:
             break;
@@ -182,7 +184,7 @@ struct App {
     }
 
     void draw(SDL_Renderer *renderer) {
-        if (autofill && filled.size() == 0) {
+        if (autofill && filled.size() == 0 && mode != AppMode_Dragging) {
             fill();
         }
         // draw lines if not filled

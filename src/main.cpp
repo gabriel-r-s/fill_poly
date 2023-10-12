@@ -1,5 +1,5 @@
-#include "sdlg.h"
-#include "app.h"
+#include "sdlg.hpp"
+#include "app.hpp"
 #include <cstdio>
 #include <vector>
 
@@ -67,6 +67,19 @@ int main(int, char**) {
         {
             ImGui::Begin("Menu");
 
+            if (ImGui::Button("Fill (F)")) {
+                app.fill();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Clear (R)")) {
+                app = App();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Quit (Esc)")) {
+                done = true;
+            }
+            ImGui::Checkbox("Autofill (A)", &app.autofill);
+
             ImGui::Text("Mode:");
             if (ImGui::RadioButton("Create Points (C)", app.mode == AppMode_CreatePoint)) {
                 app.mode = AppMode_CreatePoint;
@@ -77,28 +90,16 @@ int main(int, char**) {
             }
 
             ImGui::Text("Points: ");
-            // for (ColorPoint &point : app.points) {
-            for (size_t i = 0; i < app.points.size(); i++) {
-                ImGui::PushID(i);
-                if (ImGui::ColorEdit3("##id", &app.points[i].color[0], 0)) {
+            int id_stack = 0;
+            for (ColorPoint &point : app.points) {
+                ImGui::PushID(id_stack++);
+                if (ImGui::ColorEdit3("##Color", point.color, 0)) {
                     app.filled.clear();
                 }
                 ImGui::PopID();
                 ImGui::SameLine();
-                ImGui::Text("(x:%d y:%d)", app.points[i].x, app.points[i].y);
+                ImGui::Text("(x:%d y:%d)", point.x, point.y);
             }
-            if (ImGui::Button("Fill (F)")) {
-                app.fill();
-            }
-            ImGui::SameLine();
-            ImGui::Checkbox("Autofill (A)", &app.autofill);
-            if (ImGui::Button("Clear (R)")) {
-                app = App();
-            }
-            if (ImGui::Button("Quit (Esc)")) {
-                done = true;
-            }
-            
             ImGui::End();
         }
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
