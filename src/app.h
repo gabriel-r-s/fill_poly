@@ -4,7 +4,13 @@
 #include <algorithm>
 
 #define MIN_DIST 9
-enum AppMode { AppMode_CreatePoint, AppMode_Edit, AppMode_Dragging };
+#define AUTOFILL_INTERVAL 30
+
+enum AppMode {
+    AppMode_CreatePoint,
+    AppMode_Edit,
+    AppMode_Dragging
+};
 
 struct ColorPoint {
     int x, y;
@@ -36,16 +42,17 @@ struct App {
     size_t nearest_point; 
     size_t selected_point;
     size_t color_cycle;
-
+    bool autofill;
     std::vector<ColorPoint> filled;
-
     AppMode mode;
     
     App() {
         nearest_point = -1;
-        selected_point = false;
-        mode = AppMode_CreatePoint;
+        selected_point = 0;
         color_cycle = 0;
+        filled = {};
+        autofill = false;
+        mode = AppMode_CreatePoint;
     }
 
     size_t find_nearest_point(int x, int y) {
@@ -70,13 +77,16 @@ struct App {
         case AppMode_CreatePoint:   
             point.x = x;
             point.y = y;
-            memcpy(point.color, COLOR_CYCLE[color_cycle], sizeof(float)*3);
+            std::copy(COLOR_CYCLE[color_cycle], COLOR_CYCLE[color_cycle]+3, point.color);
             points.push_back(point);
             color_cycle = (color_cycle + 1) % COLOR_CYCLE_SIZE;
+            filled.clear();
             break;
         case AppMode_Edit:
             selected_point = nearest_point;
             mode = AppMode_Dragging;
+            break;
+        case AppMode_Dragging:
             break;
         }
     }
@@ -84,6 +94,7 @@ struct App {
     void on_move(int x, int y) {
         switch (mode) {
         case AppMode_CreatePoint:
+            break;
         case AppMode_Edit:
             nearest_point = find_nearest_point(x, y);
             break;
@@ -100,6 +111,7 @@ struct App {
     void on_release(int x, int y) {
         switch (mode) {
         case AppMode_CreatePoint:
+            break;
         case AppMode_Edit:
             break;
         case AppMode_Dragging:
@@ -109,6 +121,7 @@ struct App {
     }
 
     void fill() {
+        filled.clear();
         std::vector<ColorPoint> intersections;
         for (size_t i = 0; i < points.size(); i++) {
             size_t j = i + 1;
@@ -133,7 +146,7 @@ struct App {
             float b = p0.b();
 
             for (int y = p0.y; y < p1.y; y++) {
-                intersections.push_back({ x, y, {r, g, b} });
+                intersections.push_back({ int(x), y, {r, g, b} });
                 x += dx;
                 r += dr;
                 g += dg;
@@ -159,7 +172,7 @@ struct App {
                 db = (p1.b() - p0.b()) / (p1.x - p0.x);
             }
 
-            for (size_t x = p0.x; x <= p1.x; x++) {
+            for (int x = p0.x; x <= p1.x; x++) {
                 filled.push_back({x, p0.y, {r, g, b}});
                 r += dr;
                 g += dg;
@@ -169,6 +182,10 @@ struct App {
     }
 
     void draw(SDL_Renderer *renderer) {
+        if (autofill && filled.size() == 0) {
+            fill();
+        }
+        // draw lines if not filled
         if (filled.size() == 0) {
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 24);
             for (size_t i = 0; i < points.size(); i++) {
@@ -177,10 +194,13 @@ struct App {
                 SDL_RenderDrawLine(renderer, points[i].x, points[i].y, points[j].x, points[j].y);
             }
         }
+        // draw filled polygon TODO: cache this in an SDL_Texture
+        // this tends to get slow on large polygons
         for (ColorPoint point : filled) {
             SDL_SetRenderDrawColor(renderer, point.r()*255, point.g()*255, point.b()*255, 0);
             SDL_RenderDrawPoint(renderer, point.x, point.y);
         }
+        // draw a square around the nearest vertex
         if (mode == AppMode_Edit && nearest_point != -1) {
             ColorPoint point = points[nearest_point];
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);

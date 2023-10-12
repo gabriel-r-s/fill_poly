@@ -19,7 +19,7 @@ int main(int, char**) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
-            done = (quit_event(event, window));
+            done = quit_event(event, window);
 
             switch (event.type) {
             case SDL_MOUSEBUTTONDOWN:
@@ -35,11 +35,28 @@ int main(int, char**) {
                 app.on_move(event.button.x, event.button.y);
                 break;
             case SDL_KEYDOWN:
+                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) done = true;
                 if (io.WantCaptureKeyboard) break;
-
                 switch (event.key.keysym.scancode) {
                 case SDL_SCANCODE_ESCAPE:
                     done = true;
+                    break;
+                case SDL_SCANCODE_C:
+                    app.mode = AppMode_CreatePoint;
+                    break;
+                case SDL_SCANCODE_E:
+                    app.mode = AppMode_Edit;
+                    break;
+                case SDL_SCANCODE_F:
+                    app.fill();
+                    break;
+                case SDL_SCANCODE_A:
+                    app.autofill = !app.autofill;
+                    break;
+                case SDL_SCANCODE_R:
+                    app = App();
+                    break;
+                default:
                     break;
                 }
                 break;
@@ -51,31 +68,34 @@ int main(int, char**) {
             ImGui::Begin("Menu");
 
             ImGui::Text("Mode:");
-            if (ImGui::RadioButton("Create Points", app.mode == AppMode_CreatePoint)) {
+            if (ImGui::RadioButton("Create Points (C)", app.mode == AppMode_CreatePoint)) {
                 app.mode = AppMode_CreatePoint;
             }
             ImGui::SameLine();
-            if (ImGui::RadioButton("Edit", app.mode == AppMode_Edit)) {
+            if (ImGui::RadioButton("Edit (E)", app.mode == AppMode_Edit || app.mode == AppMode_Dragging)) {
                 app.mode = AppMode_Edit;
             }
 
             ImGui::Text("Points: ");
             // for (ColorPoint &point : app.points) {
             for (size_t i = 0; i < app.points.size(); i++) {
-                ImGui::Text("(x:%d y:%d)", app.points[i].x, app.points[i].y);
                 ImGui::PushID(i);
                 if (ImGui::ColorEdit3("##id", &app.points[i].color[0], 0)) {
                     app.filled.clear();
                 }
                 ImGui::PopID();
+                ImGui::SameLine();
+                ImGui::Text("(x:%d y:%d)", app.points[i].x, app.points[i].y);
             }
-            if (ImGui::Button("Fill")) {
+            if (ImGui::Button("Fill (F)")) {
                 app.fill();
             }
-            if (ImGui::Button("Clear")) {
+            ImGui::SameLine();
+            ImGui::Checkbox("Autofill (A)", &app.autofill);
+            if (ImGui::Button("Clear (R)")) {
                 app = App();
             }
-            if (ImGui::Button("Quit")) {
+            if (ImGui::Button("Quit (Esc)")) {
                 done = true;
             }
             
