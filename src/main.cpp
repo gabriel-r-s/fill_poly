@@ -11,15 +11,16 @@ int main(int, char**) {
     SDL_Renderer *renderer;
     setup(&window, &renderer, WIDTH, HEIGHT);
     ImGuiIO& io = ImGui::GetIO();
-    
+    SDL_Event event;
     App app;
 
-    bool done = false;
-    while (!done) {
-        SDL_Event event;
+    for (;;) {
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
-            done = quit_event(event, window);
+            if (quit_event(event, window)) {
+                cleanup(window, renderer);
+                return 0;
+            }
 
             switch (event.type) {
             case SDL_MOUSEBUTTONDOWN:
@@ -35,12 +36,12 @@ int main(int, char**) {
                 app.on_move(event.button.x, event.button.y);
                 break;
             case SDL_KEYDOWN:
-                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) done = true;
+                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                    cleanup(window, renderer);
+                    return 0;
+                }
                 if (io.WantCaptureKeyboard) break;
                 switch (event.key.keysym.scancode) {
-                case SDL_SCANCODE_ESCAPE:
-                    done = true;
-                    break;
                 case SDL_SCANCODE_C:
                     app.mode = AppMode_CreatePoint;
                     break;
@@ -76,7 +77,8 @@ int main(int, char**) {
             }
             ImGui::SameLine();
             if (ImGui::Button("Quit (Esc)")) {
-                done = true;
+                cleanup(window, renderer);
+                return 0;
             }
             ImGui::Checkbox("Autofill (A)", &app.autofill);
 

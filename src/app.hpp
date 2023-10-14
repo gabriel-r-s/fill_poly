@@ -192,9 +192,7 @@ struct App {
     void draw(SDL_Renderer *renderer) {
         if (autofill && filled.size() == 0 && mode != AppMode_Dragging) {
             fill();
-        }
-        // draw lines if not filled
-        if (filled.size() == 0) {
+        } else if (filled.size() == 0) {
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 24);
             for (size_t i = 0; i < points.size(); i++) {
                 size_t j = i + 1;
@@ -212,8 +210,10 @@ struct App {
         if (mode == AppMode_Edit && nearest_point != -1) {
             ColorPoint point = points[nearest_point];
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            for (int y = -MIN_DIST; y < MIN_DIST; y++) {
-                for (int x = -MIN_DIST; x < MIN_DIST; x++) {
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 128);
+        
+            for (int y = -MIN_DIST / 2; y < MIN_DIST / 2; y++) {
+                for (int x = -MIN_DIST / 2; x < MIN_DIST / 2; x++) {
                     SDL_RenderDrawPoint(renderer, x + point.x, y + point.y);
                 }
             }

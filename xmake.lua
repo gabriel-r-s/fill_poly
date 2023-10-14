@@ -1,7 +1,7 @@
 add_rules("mode.debug", "mode.release")
 add_requires("imgui", {configs = {sdl2 = true, sdl2_renderer = true}})
 
-target("second")
+target("fill_poly")
     set_kind("binary")
     add_files("src/*.cpp")
     add_packages("imgui")
