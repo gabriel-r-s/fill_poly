@@ -54,7 +54,7 @@ int main(int, char**) {
                     app.autofill = !app.autofill;
                     break;
                 case SDL_SCANCODE_R:
-                    app = App();
+                    app.clear();
                     break;
                 default:
                     break;
@@ -72,7 +72,7 @@ int main(int, char**) {
             }
             ImGui::SameLine();
             if (ImGui::Button("Clear (R)")) {
-                app = App();
+                app.clear();
             }
             ImGui::SameLine();
             if (ImGui::Button("Quit (Esc)")) {

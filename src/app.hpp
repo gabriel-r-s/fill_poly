@@ -3,7 +3,7 @@
 #include <climits>
 #include <algorithm>
 
-#define MIN_DIST 9
+#define MIN_DIST 16
 #define AUTOFILL_INTERVAL 30
 
 enum AppMode {
@@ -32,9 +32,9 @@ const float COLOR_CYCLE[COLOR_CYCLE_SIZE][3] = {
     {1.0, 0.0, 0.0},
     {0.0, 1.0, 0.0},
     {0.0, 0.0, 1.0},
-    {0.5, 0.5, 0.0},
-    {0.0, 0.0, 0.5},
-    {0.5, 0.5, 0.5}
+    {1.0, 1.0, 0.0},
+    {0.0, 1.0, 1.0},
+    {1.0, 0.0, 1.0},
 };
 
 struct App {
@@ -44,6 +44,7 @@ struct App {
     size_t color_cycle;
     bool autofill;
     std::vector<ColorPoint> filled;
+    std::vector<ColorPoint> intersections;
     AppMode mode;
     
     App() {
@@ -53,6 +54,11 @@ struct App {
         filled = {};
         autofill = false;
         mode = AppMode_CreatePoint;
+    }
+
+    void clear() {
+        color_cycle = 0;
+        points.clear();
     }
 
     size_t find_nearest_point(int x, int y) {
@@ -124,7 +130,7 @@ struct App {
 
     void fill() {
         filled.clear();
-        std::vector<ColorPoint> intersections;
+        intersections.clear();
         for (size_t i = 0; i < points.size(); i++) {
             size_t j = i + 1;
             if (j == points.size()) j = 0;
