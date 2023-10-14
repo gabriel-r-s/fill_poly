@@ -132,7 +132,6 @@ struct App {
         for (size_t i = 0; i < points.size(); i++) {
             size_t j = i + 1;
             if (j == points.size()) j = 0;
-
             ColorPoint p0 = points[i];
             ColorPoint p1 = points[j];
             if (p0.y == p1.y) {
@@ -145,12 +144,10 @@ struct App {
             float dr = float(p1.r() - p0.r()) / float(p1.y - p0.y);
             float dg = float(p1.g() - p0.g()) / float(p1.y - p0.y);
             float db = float(p1.b() - p0.b()) / float(p1.y - p0.y);
-
             float x = p0.x;
             float r = p0.r();
             float g = p0.g();
             float b = p0.b();
-
             for (int y = p0.y; y < p1.y; y++) {
                 intersections.push_back({ int(x), y, {r, g, b} });
                 x += dx;
@@ -163,11 +160,9 @@ struct App {
             return (a.y < b.y || (a.y == b.y && a.x < b.x));
         };
         std::sort(intersections.begin(), intersections.end(), comp);
-
         for (size_t i = 0; i < intersections.size(); i += 2) {
             ColorPoint p0 = intersections[i];
             ColorPoint p1 = intersections[i + 1];
-
             float r = p0.r();
             float g = p0.g();
             float b = p0.b();
@@ -177,7 +172,6 @@ struct App {
                 dg = (p1.g() - p0.g()) / (p1.x - p0.x);
                 db = (p1.b() - p0.b()) / (p1.x - p0.x);
             }
-
             for (int x = p0.x; x <= p1.x; x++) {
                 filled.push_back({x, p0.y, {r, g, b}});
                 r += dr;
@@ -191,7 +185,6 @@ struct App {
         if (autofill && filled.size() == 0 && mode != AppMode_Dragging) {
             fill();
         }
-        
         if (filled.size() == 0) {
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 24);
             for (size_t i = 0; i < points.size(); i++) {
@@ -212,11 +205,13 @@ struct App {
             ColorPoint point = points[nearest_point];
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 128);
-            for (int y = -MIN_DIST / 2; y < MIN_DIST / 2; y++) {
-                for (int x = -MIN_DIST / 2; x < MIN_DIST / 2; x++) {
-                    SDL_RenderDrawPoint(renderer, x + point.x, y + point.y);
-                }
-            }
+            SDL_Rect square = {
+                .x = point.x - MIN_DIST / 2,
+                .y = point.y - MIN_DIST / 2,
+                .w = MIN_DIST,
+                .h = MIN_DIST,
+            };
+            SDL_RenderFillRect(renderer, &square);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
         }
     }
