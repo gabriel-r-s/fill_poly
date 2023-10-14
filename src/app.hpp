@@ -34,9 +34,7 @@ const float COLOR_CYCLE[COLOR_CYCLE_SIZE][3] = {
     {0.0, 0.0, 1.0},
     {1.0, 1.0, 0.0},
     {0.0, 1.0, 1.0},
-    {1.0, 0.0, 1.0},
-};
-
+    {1.0, 0.0, 1.0}, };
 struct App {
     std::vector<ColorPoint> points;
     size_t nearest_point; 
@@ -68,7 +66,7 @@ struct App {
         for (size_t i = 0; i < points.size(); i++) {
             int dx = abs(points[i].x - x);
             int dy = abs(points[i].y - y);
-            if (dx < MIN_DIST && dy < MIN_DIST && dx < min_dx && dy && dy < min_dy) {
+            if (dx < MIN_DIST && dy < MIN_DIST && dx < min_dx && dy < min_dy) {
                 nearest = i;
                 min_dx = dx;
                 min_dy = dy;
@@ -192,26 +190,28 @@ struct App {
     void draw(SDL_Renderer *renderer) {
         if (autofill && filled.size() == 0 && mode != AppMode_Dragging) {
             fill();
-        } else if (filled.size() == 0) {
+        }
+        
+        if (filled.size() == 0) {
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 24);
             for (size_t i = 0; i < points.size(); i++) {
                 size_t j = i + 1;
                 if (j == points.size()) j = 0;
                 SDL_RenderDrawLine(renderer, points[i].x, points[i].y, points[j].x, points[j].y);
             }
-        }
-        // draw filled polygon TODO: cache this in an SDL_Texture
-        // this tends to get slow on large polygons
-        for (ColorPoint point : filled) {
-            SDL_SetRenderDrawColor(renderer, point.r()*255, point.g()*255, point.b()*255, 0);
-            SDL_RenderDrawPoint(renderer, point.x, point.y);
+        } else {
+            // draw filled polygon TODO: cache this in an SDL_Texture
+            // this tends to get slow on large polygons
+            for (ColorPoint point : filled) {
+                SDL_SetRenderDrawColor(renderer, point.r()*255, point.g()*255, point.b()*255, 0);
+                SDL_RenderDrawPoint(renderer, point.x, point.y);
+            }
         }
         // draw a square around the nearest vertex
         if (mode == AppMode_Edit && nearest_point != -1) {
             ColorPoint point = points[nearest_point];
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 128);
-        
             for (int y = -MIN_DIST / 2; y < MIN_DIST / 2; y++) {
                 for (int x = -MIN_DIST / 2; x < MIN_DIST / 2; x++) {
                     SDL_RenderDrawPoint(renderer, x + point.x, y + point.y);
