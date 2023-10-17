@@ -1,9 +1,6 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_rect.h>
-#include <SDL2/SDL_video.h>
 #include <SDL2/SDL.h>
 
 #if !SDL_VERSION_ATLEAST(2,0,17)
@@ -12,7 +9,6 @@
 
 void setup(SDL_Window **window, SDL_Renderer **renderer, uint32_t width, uint32_t height) {
     SDL_Init(SDL_INIT_VIDEO);
-
 #ifdef SDL_HINT_IME_SHOW_UI
     SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
 #endif

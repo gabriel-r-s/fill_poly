@@ -43,10 +43,10 @@ int main(int, char**) {
                 if (io.WantCaptureKeyboard) break;
                 switch (event.key.keysym.scancode) {
                 case SDL_SCANCODE_C:
-                    app.mode = AppMode_CreatePoint;
+                    app.state = AppState_CreatePoint;
                     break;
                 case SDL_SCANCODE_E:
-                    app.mode = AppMode_Edit;
+                    app.state = AppState_Edit;
                     break;
                 case SDL_SCANCODE_F:
                     app.fill();
@@ -65,45 +65,52 @@ int main(int, char**) {
         }
 
         imgui_new_frame();
-        {
-            ImGui::Begin("Menu");
+        ImGui::Begin("Menu");
 
-            if (ImGui::Button("Fill (F)")) {
-                app.fill();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Clear (R)")) {
-                app.clear();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Quit (Esc)")) {
-                cleanup(window, renderer);
-                return 0;
-            }
-            ImGui::Checkbox("Autofill (A)", &app.autofill);
-
-            ImGui::Text("Mode:");
-            if (ImGui::RadioButton("Create Points (C)", app.mode == AppMode_CreatePoint)) {
-                app.mode = AppMode_CreatePoint;
-            }
-            ImGui::SameLine();
-            if (ImGui::RadioButton("Edit (E)", app.mode == AppMode_Edit || app.mode == AppMode_Dragging)) {
-                app.mode = AppMode_Edit;
-            }
-
-            ImGui::Text("Points: ");
-            int id_stack = 0;
-            for (ColorPoint &point : app.points) {
-                ImGui::PushID(id_stack++);
-                if (ImGui::ColorEdit3("##Color", point.color, 0)) {
-                    app.filled.clear();
-                }
-                ImGui::PopID();
-                ImGui::SameLine();
-                ImGui::Text("(x:%d y:%d)", point.x, point.y);
-            }
-            ImGui::End();
+        if (ImGui::Button("Fill (F)")) {
+            app.fill();
         }
+        ImGui::SameLine();
+        if (ImGui::Button("Clear (R)")) {
+            app.clear();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Quit (Esc)")) {
+            cleanup(window, renderer);
+            return 0;
+        }
+        ImGui::Checkbox("Autofill (A)", &app.autofill);
+
+        ImGui::Text("Mode:");
+        if (ImGui::RadioButton("Create Points (C)", app.state == AppState_CreatePoint)) {
+            app.state = AppState_CreatePoint;
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Edit (E)", app.state == AppState_Edit || app.state == AppState_Dragging)) {
+            app.state = AppState_Edit;
+        }
+
+        ImGui::Text("Points: ");
+        int id_stack = 0;
+        for (ColorPoint &point : app.points) {
+            ImGui::PushID(id_stack++);
+            int x = point.x;
+            if (ImGui::InputInt("x", &x)) {
+                point.x = x;
+            }
+            ImGui::SameLine();
+            int y = point.y;
+            if (ImGui::InputInt("y", &y)) {
+                point.y = y;
+            }
+            if (ImGui::ColorEdit3("##Color", point.color, 0)) {
+                app.filled.clear();
+                app.color_changing = 1;
+            }
+            ImGui::PopID();
+        }
+        ImGui::End();
+
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
         SDL_RenderClear(renderer);
         app.draw(renderer);
