@@ -26,6 +26,10 @@ struct ColorPoint {
     float b() {
         return color[2];
     }
+
+    static bool cmp_y_x(ColorPoint &a, ColorPoint &b) {
+        return (a.y < b.y) || (a.y == b.y && a.x < b.x);
+    }
 };
 
 #define COLOR_CYCLE_SIZE 6
@@ -44,7 +48,7 @@ struct App {
     size_t selected_point;
     size_t color_cycle;
     bool autofill;
-    int color_changing;
+    int editing;
     std::vector<ColorPoint> filled;
     std::vector<ColorPoint> intersections;
     AppState state;
@@ -54,7 +58,7 @@ struct App {
         selected_point = 0;
         color_cycle = 0;
         autofill = false;
-        color_changing = 0;
+        editing = 0;
         filled = {};
         state = AppState_CreatePoint;
     }
@@ -63,6 +67,11 @@ struct App {
         color_cycle = 0;
         points.clear();
         filled.clear();
+    }
+
+    void must_refill() {
+        filled.clear();
+        editing = 10;
     }
 
     size_t find_nearest_point(int x, int y) {
@@ -112,7 +121,7 @@ struct App {
             nearest_point = find_nearest_point(x, y);
             break;
         case AppState_Dragging:
-            filled.clear();
+            must_refill();
             points[selected_point].x = x;
             points[selected_point].y = y;
             break;
@@ -163,12 +172,7 @@ struct App {
                 b += db;
             }
         }
-
-        auto comp = [](const ColorPoint& a, const ColorPoint& b) {
-            return (a.y < b.y || (a.y == b.y && a.x < b.x));
-        };
-        std::sort(intersections.begin(), intersections.end(), comp);
-
+        std::sort(intersections.begin(), intersections.end(), ColorPoint::cmp_y_x);
         for (size_t i = 0; i < intersections.size(); i += 2) {
             size_t j = i + 1;
             if (j == intersections.size()) {
@@ -198,15 +202,12 @@ struct App {
     }
 
     void draw(SDL_Renderer *renderer) {
-        if (autofill && filled.size() == 0 && state != AppState_Dragging && color_changing == 0) {
+        if (autofill && editing == 0 && state != AppState_Dragging) {
             fill();
         }
-        color_changing--;
-        if (color_changing < 0) {
-            color_changing = 0;
-        }
-
-        if (filled.size() == 0) {
+        editing -= (editing > 0);
+        if (filled.empty()) {
+            // draw edges only
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 24);
             for (size_t i = 0; i < points.size(); i++) {
                 size_t j = i + 1;

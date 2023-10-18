@@ -94,18 +94,18 @@ int main(int, char**) {
         int id_stack = 0;
         for (ColorPoint &point : app.points) {
             ImGui::PushID(id_stack++);
-            int x = point.x;
-            if (ImGui::InputInt("x", &x)) {
-                point.x = x;
-            }
-            ImGui::SameLine();
-            int y = point.y;
-            if (ImGui::InputInt("y", &y)) {
-                point.y = y;
-            }
             if (ImGui::ColorEdit3("##Color", point.color, 0)) {
-                app.filled.clear();
-                app.color_changing = 1;
+                app.must_refill();
+            }
+            int point_int[2] = { point.x, point.y };
+            if (ImGui::InputInt2("##XY", point_int)) {
+                if (0 <= point_int[0] && point_int[0] < WIDTH) {
+                    point.x = point_int[0];
+                }
+                if (0 <= point_int[1] && point_int[1] < HEIGHT) {
+                    point.y = point_int[1];
+                }
+                app.must_refill();
             }
             ImGui::PopID();
         }
