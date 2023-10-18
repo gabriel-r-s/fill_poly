@@ -14,8 +14,16 @@ enum AppState {
 };
 
 struct ColorPoint {
-    int16_t x, y;
+    int16_t xy[2];
     float color[3];
+
+    int16_t &x() {
+        return xy[0];
+    }
+
+    int16_t &y() {
+        return xy[1];
+    }
 
     float r() {
         return color[0];
@@ -28,7 +36,10 @@ struct ColorPoint {
     }
 
     static bool cmp_y_x(ColorPoint &a, ColorPoint &b) {
-        return (a.y < b.y) || (a.y == b.y && a.x < b.x);
+        uint32_t ap, bp;
+        memcpy(&ap, a.xy, sizeof(uint32_t));
+        memcpy(&bp, b.xy, sizeof(uint32_t));
+        return ap < bp;
     }
 };
 
@@ -79,8 +90,8 @@ struct App {
         int min_dx = INT_MAX;
         int min_dy = INT_MAX;
         for (size_t i = 0; i < points.size(); i++) {
-            int dx = abs(points[i].x - x);
-            int dy = abs(points[i].y - y);
+            int dx = abs(points[i].x() - x);
+            int dy = abs(points[i].y() - y);
             if (dx < MIN_DIST && dy < MIN_DIST && dx < min_dx && dy < min_dy) {
                 nearest = i;
                 min_dx = dx;
@@ -94,8 +105,8 @@ struct App {
         ColorPoint point;
         switch (state) {
         case AppState_CreatePoint:   
-            point.x = x;
-            point.y = y;
+            point.x() = x;
+            point.y() = y;
             std::copy(COLOR_CYCLE[color_cycle], COLOR_CYCLE[color_cycle]+3, point.color);
             points.push_back(point);
             color_cycle = (color_cycle + 1) % COLOR_CYCLE_SIZE;
@@ -122,8 +133,8 @@ struct App {
             break;
         case AppState_Dragging:
             must_refill();
-            points[selected_point].x = x;
-            points[selected_point].y = y;
+            points[selected_point].x() = x;
+            points[selected_point].y() = y;
             break;
         }
     }
@@ -150,21 +161,21 @@ struct App {
             }
             ColorPoint p0 = points[i];
             ColorPoint p1 = points[j];
-            if (p0.y == p1.y) {
+            if (p0.y() == p1.y()) {
                 continue;
             }
-            if (p0.y > p1.y) {
+            if (p0.y() > p1.y()) {
                 std::swap(p0, p1);
             }
-            float dx = float(p1.x - p0.x) / float(p1.y - p0.y);
-            float dr = float(p1.r() - p0.r()) / float(p1.y - p0.y);
-            float dg = float(p1.g() - p0.g()) / float(p1.y - p0.y);
-            float db = float(p1.b() - p0.b()) / float(p1.y - p0.y);
-            float x = p0.x;
+            float dx = float(p1.x() - p0.x()) / float(p1.y() - p0.y());
+            float dr = float(p1.r() - p0.r()) / float(p1.y() - p0.y());
+            float dg = float(p1.g() - p0.g()) / float(p1.y() - p0.y());
+            float db = float(p1.b() - p0.b()) / float(p1.y() - p0.y());
+            float x = p0.x();
             float r = p0.r();
             float g = p0.g();
             float b = p0.b();
-            for (int16_t y = p0.y; y < p1.y; y++) {
+            for (int16_t y = p0.y(); y < p1.y(); y++) {
                 intersections.push_back({ int16_t(x), y, {r, g, b} });
                 x += dx;
                 r += dr;
@@ -216,14 +227,14 @@ struct App {
                 if (j == points.size()) {
                     j = 0;
                 }
-                SDL_RenderDrawLine(renderer, points[i].x, points[i].y, points[j].x, points[j].y);
+                SDL_RenderDrawLine(renderer, points[i].x(), points[i].y(), points[j].x(), points[j].y());
             }
         } else {
             // draw filled polygon TODO: cache this in an SDL_Texture
             // this tends to get slow on large polygons
             for (ColorPoint point : filled) {
                 SDL_SetRenderDrawColor(renderer, point.r()*255, point.g()*255, point.b()*255, 0);
-                SDL_RenderDrawPoint(renderer, point.x, point.y);
+                SDL_RenderDrawPoint(renderer, point.x(), point.y());
             }
         }
         // draw a square around the nearest vertex
@@ -232,8 +243,8 @@ struct App {
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 128);
             SDL_Rect square = {
-                .x = point.x - MIN_DIST / 2,
-                .y = point.y - MIN_DIST / 2,
+                .x = point.x() - MIN_DIST / 2,
+                .y = point.y() - MIN_DIST / 2,
                 .w = MIN_DIST,
                 .h = MIN_DIST,
             };

@@ -94,13 +94,13 @@ int main(int, char**) {
             if (ImGui::ColorEdit3("##Color", point.color, 0)) {
                 app.must_refill();
             }
-            int point_int[2] = { point.x, point.y };
+            int point_int[2] = { point.x(), point.y() };
             if (ImGui::InputInt2("##XY", point_int)) {
                 if (0 <= point_int[0] && point_int[0] < WIDTH) {
-                    point.x = point_int[0];
+                    point.x() = point_int[0];
                 }
                 if (0 <= point_int[1] && point_int[1] < HEIGHT) {
-                    point.y = point_int[1];
+                    point.y() = point_int[1];
                 }
                 app.must_refill();
             }
