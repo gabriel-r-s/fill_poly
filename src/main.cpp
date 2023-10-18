@@ -21,7 +21,6 @@ int main(int, char**) {
                 cleanup(window, renderer);
                 return 0;
             }
-
             switch (event.type) {
             case SDL_MOUSEBUTTONDOWN:
                 if (io.WantCaptureMouse) break;
@@ -66,7 +65,6 @@ int main(int, char**) {
 
         imgui_new_frame();
         ImGui::Begin("Menu");
-
         if (ImGui::Button("Fill (F)")) {
             app.fill();
         }
@@ -89,7 +87,6 @@ int main(int, char**) {
         if (ImGui::RadioButton("Edit (E)", app.state == AppState_Edit || app.state == AppState_Dragging)) {
             app.state = AppState_Edit;
         }
-
         ImGui::Text("Points: ");
         int id_stack = 0;
         for (ColorPoint &point : app.points) {
@@ -110,7 +107,6 @@ int main(int, char**) {
             ImGui::PopID();
         }
         ImGui::End();
-
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
         SDL_RenderClear(renderer);
         app.draw(renderer);
@@ -120,3 +116,4 @@ int main(int, char**) {
     cleanup(window, renderer);
     return 0;
 }
+

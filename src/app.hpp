@@ -205,7 +205,9 @@ struct App {
         if (autofill && editing == 0 && state != AppState_Dragging) {
             fill();
         }
-        editing -= (editing > 0);
+        if (editing > 0) {
+            editing--;
+        }
         if (filled.empty()) {
             // draw edges only
             SDL_SetRenderDrawColor(renderer, 255, 255, 255, 24);
@@ -240,3 +242,4 @@ struct App {
         }
     }
 };
+
