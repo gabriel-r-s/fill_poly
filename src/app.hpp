@@ -197,13 +197,13 @@ struct App {
             float dr = 0.0;
             float dg = 0.0;
             float db = 0.0;
-            if (p0.x != p1.x) {
-                dr = (p1.r() - p0.r()) / (p1.x - p0.x);
-                dg = (p1.g() - p0.g()) / (p1.x - p0.x);
-                db = (p1.b() - p0.b()) / (p1.x - p0.x);
+            if (p0.x() != p1.x()) {
+                dr = (p1.r() - p0.r()) / (p1.x() - p0.x());
+                dg = (p1.g() - p0.g()) / (p1.x() - p0.x());
+                db = (p1.b() - p0.b()) / (p1.x() - p0.x());
             }
-            int16_t y = p0.y;
-            for (int16_t x = p0.x; x <= p1.x; x++) {
+            int16_t y = p0.y();
+            for (int16_t x = p0.x(); x <= p1.x(); x++) {
                 filled.push_back({x, y, {r, g, b}});
                 r += dr;
                 g += dg;
