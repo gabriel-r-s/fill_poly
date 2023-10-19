@@ -87,16 +87,17 @@ int main(int, char**) {
         if (ImGui::RadioButton("Edit (E)", app.state == AppState_Edit || app.state == AppState_Dragging)) {
             app.state = AppState_Edit;
         }
-        ImGui::Text("Points: ");
         int id_stack = 0;
+        if (!app.points.empty()) {
+            ImGui::Text("Points: ");
+        }
         for (ColorPoint &point : app.points) {
             ImGui::PushID(id_stack++);
-            ImGui::Text("(%4d, %4d)", point.x(), point.y());
+            ImGui::Text("%4d %4d", point.x(), point.y());
             ImGui::SameLine();
-            if (ImGui::ColorEdit3("##Color", point.color, 0)) {
+            if (ImGui::ColorEdit3("##Color", point.color, ImGuiColorEditFlags_NoInputs)) {
                 app.must_refill();
             }
-            ImGui::NewLine();
             ImGui::PopID();
         }
         ImGui::End();

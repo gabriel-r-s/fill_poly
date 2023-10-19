@@ -82,7 +82,7 @@ struct App {
 
     void must_refill() {
         filled.clear();
-        editing = 10;
+        editing = 3;
     }
 
     size_t find_nearest_point(int x, int y) {
