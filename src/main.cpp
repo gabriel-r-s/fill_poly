@@ -20,7 +20,7 @@ int main(int, char**) {
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
                 if (quit_event(event, window)) {
-                cleanup(window, renderer);
+                cleanup(window, renderer, texture);
                 return 0;
             }
             switch (event.type) {
@@ -40,7 +40,7 @@ int main(int, char**) {
         imgui_new_frame();
         ImGui::Begin("Menu");
         if (ImGui::Button("Quit")) {
-            cleanup(window, renderer);
+            cleanup(window, renderer, texture);
             return 0;
         }
 
@@ -57,6 +57,7 @@ int main(int, char**) {
         ImGui::SameLine();
         if (ImGui::RadioButton("Edit", app.state == AppState_Edit)) {
             app.state = AppState_Edit;
+            app.num_buffered_points = 0;
         }
         if (app.selected != SIZE_MAX) {
             Triangle &tri = app.triangles[app.selected];
@@ -76,22 +77,28 @@ int main(int, char**) {
 
             ImGui::Text("\t");
             ImGui::SameLine();
-            if (ImGui::Button("Fill Selected")) {
-                // app.fill();
+            if (ImGui::Button("Fill")) {
+                app.fill_selected(renderer);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Delete")) {
+                app.remove_selected();
             }
         }
-        ImGui::Text("dbginfo:");
-        ImGui::Text("\tmse %4d %4d", mousex, mousey);
-        ImGui::NewLine();
-        for (Triangle tri : app.triangles) {
-            ImGui::Text("\ttri %4.0f %4.0f", tri.points[0].x, tri.points[0].y);
-            ImGui::Text("\ttri %4.0f %4.0f", tri.points[1].x, tri.points[1].y);
-            ImGui::Text("\ttri %4.0f %4.0f", tri.points[2].x, tri.points[2].y);
-            ImGui::NewLine();
-        }
-        for (int i = 0; i < app.num_buffered_points; i++) {
-            ImGui::Text("\tbuf %4.0f %4.0f", app.buffered_points[i].x, app.buffered_points[i].y);
-        }
+        // ImGui::Text("dbginfo:");
+        // ImGui::Text("\tmse %4d %4d", mousex, mousey);
+        // ImGui::NewLine();
+        // for (Triangle tri : app.triangles) {
+        //     ImGui::Text("\ttri %4.0f %4.0f", tri.points[0].x, tri.points[0].y);
+        //     ImGui::Text("\ttri %4.0f %4.0f", tri.points[1].x, tri.points[1].y);
+        //     ImGui::Text("\ttri %4.0f %4.0f", tri.points[2].x, tri.points[2].y);
+        //     ImGui::NewLine();
+        // }
+        // for (int i = 0; i < app.num_buffered_points; i++) {
+        //     float x = app.buffered_points[i].x;
+        //     float y = app.buffered_points[i].y;
+        //     ImGui::Text("\tbuf %4.0f %4.0f", x, y);
+        // }
 
         ImGui::End();
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
@@ -100,7 +107,7 @@ int main(int, char**) {
         imgui_render();
         SDL_RenderPresent(renderer);
     }
-    cleanup(window, renderer);
+    cleanup(window, renderer, texture);
     return 0;
 }
 
