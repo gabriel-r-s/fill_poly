@@ -12,12 +12,14 @@ int main(int, char**) {
     setup(&window, &renderer, WIDTH, HEIGHT);
     ImGuiIO& io = ImGui::GetIO();
     SDL_Event event;
-    App app;
+    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, WIDTH, HEIGHT);
+    App app(texture);
 
+    int mousex = 0, mousey = 0;
     for (;;) {
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
-            if (quit_event(event, window)) {
+                if (quit_event(event, window)) {
                 cleanup(window, renderer);
                 return 0;
             }
@@ -26,84 +28,75 @@ int main(int, char**) {
                 if (io.WantCaptureMouse) break;
                 app.on_click(event.button.x, event.button.y);
                 break;
-            case SDL_MOUSEBUTTONUP:
-                if (io.WantCaptureMouse) break;
-                app.on_release(event.button.x, event.button.y);
-                break;
             case SDL_MOUSEMOTION:
-                if (io.WantCaptureMouse) break;
-                app.on_move(event.button.x, event.button.y);
+                mousex = event.button.x;
+                mousey = event.button.y;
                 break;
-            case SDL_KEYDOWN:
-                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-                    cleanup(window, renderer);
-                    return 0;
-                }
-                // if (io.WantCaptureKeyboard) break;
-                switch (event.key.keysym.scancode) {
-                case SDL_SCANCODE_C:
-                    app.state = AppState_CreatePoint;
-                    break;
-                case SDL_SCANCODE_E:
-                    app.state = AppState_Edit;
-                    break;
-                case SDL_SCANCODE_F:
-                    app.fill();
-                    break;
-                case SDL_SCANCODE_A:
-                    app.autofill = !app.autofill;
-                    break;
-                case SDL_SCANCODE_R:
-                    app.clear();
-                    break;
-                default:
-                    break;
-                }
+            default:
                 break;
             }
         }
 
         imgui_new_frame();
         ImGui::Begin("Menu");
-        if (ImGui::Button("Fill (F)")) {
-            app.fill();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Clear (R)")) {
-            app.clear();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Quit (Esc)")) {
+        if (ImGui::Button("Quit")) {
             cleanup(window, renderer);
             return 0;
         }
-        ImGui::Checkbox("Autofill (A)", &app.autofill);
 
+        ImGui::Text("Edge Color:");
+        ImGui::Text("\t");
+        ImGui::SameLine();
+        ImGui::ColorEdit3("##edge_color", app.edge_color.rgb, ImGuiColorEditFlags_NoInputs);
         ImGui::Text("Mode:");
-        if (ImGui::RadioButton("Create Points (C)", app.state == AppState_CreatePoint)) {
+        ImGui::Text("\t");
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Create Points", app.state == AppState_CreatePoint)) {
             app.state = AppState_CreatePoint;
         }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Edit (E)", app.state == AppState_Edit || app.state == AppState_Dragging)) {
+        if (ImGui::RadioButton("Edit", app.state == AppState_Edit)) {
             app.state = AppState_Edit;
         }
-        int id_stack = 0;
-        if (!app.points.empty()) {
-            ImGui::Text("Points: ");
-        }
-        for (ColorPoint &point : app.points) {
-            ImGui::PushID(id_stack++);
-            ImGui::Text("%4d %4d", point.x(), point.y());
+        if (app.selected != SIZE_MAX) {
+            Triangle &tri = app.triangles[app.selected];
+            ImGui::Text("Selected Triangle: ");
+
+            ImGui::Text("\t%4.0f %4.0f", tri.points[0].x, tri.points[0].y);
             ImGui::SameLine();
-            if (ImGui::ColorEdit3("##Color", point.color, ImGuiColorEditFlags_NoInputs)) {
-                app.must_refill();
+            ImGui::ColorEdit3("##color0", tri.colors[0].rgb, ImGuiColorEditFlags_NoInputs);
+
+            ImGui::Text("\t%4.0f %4.0f", tri.points[1].x, tri.points[1].y);
+            ImGui::SameLine();
+            ImGui::ColorEdit3("##color1", tri.colors[1].rgb, ImGuiColorEditFlags_NoInputs);
+
+            ImGui::Text("\t%4.0f %4.0f", tri.points[2].x, tri.points[2].y);
+            ImGui::SameLine();
+            ImGui::ColorEdit3("##color2", tri.colors[2].rgb, ImGuiColorEditFlags_NoInputs);
+
+            ImGui::Text("\t");
+            ImGui::SameLine();
+            if (ImGui::Button("Fill Selected")) {
+                // app.fill();
             }
-            ImGui::PopID();
         }
+        ImGui::Text("dbginfo:");
+        ImGui::Text("\tmse %4d %4d", mousex, mousey);
+        ImGui::NewLine();
+        for (Triangle tri : app.triangles) {
+            ImGui::Text("\ttri %4.0f %4.0f", tri.points[0].x, tri.points[0].y);
+            ImGui::Text("\ttri %4.0f %4.0f", tri.points[1].x, tri.points[1].y);
+            ImGui::Text("\ttri %4.0f %4.0f", tri.points[2].x, tri.points[2].y);
+            ImGui::NewLine();
+        }
+        for (int i = 0; i < app.num_buffered_points; i++) {
+            ImGui::Text("\tbuf %4.0f %4.0f", app.buffered_points[i].x, app.buffered_points[i].y);
+        }
+
         ImGui::End();
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
         SDL_RenderClear(renderer);
-        app.draw(renderer);
+        app.draw(renderer, mousex, mousey);
         imgui_render();
         SDL_RenderPresent(renderer);
     }
