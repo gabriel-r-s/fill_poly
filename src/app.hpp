@@ -279,13 +279,11 @@ struct App {
             }
         }
         
+        must_redraw--;
         if (must_redraw == 0) {
             fill_all(renderer);
-            must_redraw = -1;
-        } else if (must_redraw > 0) {
-            must_redraw--;
+            must_redraw = 0;
         }
-
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
         SDL_SetTextureBlendMode(filled, SDL_BLENDMODE_ADD);
         SDL_RenderCopy(renderer, filled, NULL, NULL);
@@ -309,8 +307,8 @@ struct App {
             float x1 = buffered_points[1].x;
             float y1 = buffered_points[1].y;
             SDL_RenderDrawLine(renderer, x0, y0, x1, y1);
-            SDL_RenderDrawLine(renderer, x0, y0, mousex, mousey);
             SDL_RenderDrawLine(renderer, x1, y1, mousex, mousey);
+            SDL_RenderDrawLine(renderer, mousex, mousey, x0, y0);
         }
     }
 };
