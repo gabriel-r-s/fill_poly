@@ -2,6 +2,7 @@
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_render.h>
 
 #if !SDL_VERSION_ATLEAST(2,0,17)
 #error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
@@ -40,10 +41,11 @@ void imgui_render() {
     ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
 }
 
-void cleanup(SDL_Window *window, SDL_Renderer *renderer) {
+void cleanup(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture) {
     ImGui_ImplSDLRenderer2_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
+    SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
