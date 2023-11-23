@@ -97,19 +97,19 @@ struct App {
     int color_cycle;
     Rgb edge_color;
     SDL_Texture *filled;
-    bool is_filled;
     std::vector<std::pair<Point, Rgb>> intersections;
-
-    // std::vector<std::pair<Point, Point>> edge_dists;
+    int must_redraw;
+    bool draw_edges;
 
     App(SDL_Texture *texture) {
         state = AppState_CreatePoint;
         selected = SIZE_MAX;
         num_buffered_points = 0;
         color_cycle = 0;
-        edge_color = Rgb(0.25, 0.25, 0.25);
+        edge_color = Rgb(1.0, 1.0, 1.0);
         filled = texture;
-        is_filled = false;
+        must_redraw = 0;
+        draw_edges = true;
     }
 
     size_t get_tri_by_point(Point p2) {
@@ -143,7 +143,6 @@ struct App {
                 if (dist > DIST_THRESH) {
                     continue;
                 }
-                // edge_dists.push_back({p2, {ix, iy}});
                 if (dist < min_dist) {
                     min_dist = dist;
                     min_dist_index = i;
@@ -153,74 +152,72 @@ struct App {
         return min_dist_index;
     }
 
-    void fill_selected(SDL_Renderer *renderer) {
-        if (selected == SIZE_MAX) {
-            return;
-        }
-        is_filled = true;
-        which_filled = selected;
-        intersections.clear();
-        for (size_t i = 0; i < 3; i++) {
-            Point p0 = triangles[selected].points[i];
-            Point p1 = triangles[selected].points[i == 2 ? 0 : i + 1];
-            Rgb c0 = triangles[selected].colors[i];
-            Rgb c1 = triangles[selected].colors[i == 2 ? 0 : i + 1];
-            // ignora segmentos horizontais 
-            if (p0.y == p1.y) {
-                continue;
-            }
-            // trabalha de cima para baixo
-            if (p0.y > p1.y) {
-                std::swap(p0, p1);
-                std::swap(c0, c1);
-            }
-            float dy = p1.y - p0.y;
-            float dx = (p1.x - p0.x) / dy;
-            float dr = (c1.r() - c0.r()) / dy;
-            float dg = (c1.g() - c0.g()) / dy;
-            float db = (c1.b() - c0.b()) / dy;
-            float x = p0.x;
-            float r = c0.r();
-            float g = c0.g();
-            float b = c0.b();
-            for (float y = p0.y; y < p1.y; y += 1.0) {
-                intersections.push_back({{x, y}, {r, g, b}});
-                x += dx;
-                r += dr;
-                g += dg;
-                b += db;
-            }
-        }
-        auto compare = [](const std::pair<Point, Rgb>& a, const std::pair<Point, Rgb>& b) {
-            return (a.first.y < b.first.y) || (a.first.y == b.first.y && a.first.x < b.first.x);
-        };
-        std::sort(intersections.begin(), intersections.end(), compare);
-
+    void fill_all(SDL_Renderer *renderer) {
         SDL_SetRenderTarget(renderer, filled);
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
         SDL_SetTextureBlendMode(filled, SDL_BLENDMODE_NONE);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
         SDL_RenderFillRect(renderer, NULL);
-        for (size_t i = 0; i < intersections.size(); i += 2) {
-            Point p0 = intersections[i].first;
-            Point p1 = intersections[i + 1].first;
-            Rgb c0 = intersections[i].second;
-            Rgb c1 = intersections[i + 1].second;
-            float dx = p1.x - p0.x;
-            float dr = (p0.x == p1.x) ? 0.0 : (c1.r() - c0.r()) / dx;
-            float dg = (p0.x == p1.x) ? 0.0 : (c1.g() - c0.g()) / dx;
-            float db = (p0.x == p1.x) ? 0.0 : (c1.b() - c0.b()) / dx;
-            float r = c0.r();
-            float g = c0.g();
-            float b = c0.b();
 
-            int y = p0.y;
-            for (int x = p0.x; x <= p1.x; x++) {
-                SDL_SetRenderDrawColor(renderer, r*255, g*255, b*255, 255);
-                SDL_RenderDrawPoint(renderer, x, y);
-                r += dr;
-                g += dg;
-                b += db;
+        for (auto tri : triangles) {
+            intersections.clear();
+            for (size_t i = 0; i < 3; i++) {
+                Point p0 = tri.points[i];
+                Point p1 = tri.points[i == 2 ? 0 : i + 1];
+                Rgb c0 = tri.colors[i];
+                Rgb c1 = tri.colors[i == 2 ? 0 : i + 1];
+                // ignora segmentos horizontais 
+                if (p0.y == p1.y) {
+                    continue;
+                }
+                // trabalha de cima para baixo
+                if (p0.y > p1.y) {
+                    std::swap(p0, p1);
+                    std::swap(c0, c1);
+                }
+                float dy = p1.y - p0.y;
+                float dx = (p1.x - p0.x) / dy;
+                float dr = (c1.r() - c0.r()) / dy;
+                float dg = (c1.g() - c0.g()) / dy;
+                float db = (c1.b() - c0.b()) / dy;
+                float x = p0.x;
+                float r = c0.r();
+                float g = c0.g();
+                float b = c0.b();
+                for (float y = p0.y; y < p1.y; y += 1.0) {
+                    intersections.push_back({{x, y}, {r, g, b}});
+                    x += dx;
+                    r += dr;
+                    g += dg;
+                    b += db;
+                }
+            }
+            auto compare = [](const std::pair<Point, Rgb>& a, const std::pair<Point, Rgb>& b) {
+                return (a.first.y < b.first.y) || (a.first.y == b.first.y && a.first.x < b.first.x);
+            };
+            std::sort(intersections.begin(), intersections.end(), compare);
+
+            for (size_t i = 0; i < intersections.size(); i += 2) {
+                Point p0 = intersections[i].first;
+                Point p1 = intersections[i + 1].first;
+                Rgb c0 = intersections[i].second;
+                Rgb c1 = intersections[i + 1].second;
+                float dx = p1.x - p0.x;
+                float dr = (p0.x == p1.x) ? 0.0 : (c1.r() - c0.r()) / dx;
+                float dg = (p0.x == p1.x) ? 0.0 : (c1.g() - c0.g()) / dx;
+                float db = (p0.x == p1.x) ? 0.0 : (c1.b() - c0.b()) / dx;
+                float r = c0.r();
+                float g = c0.g();
+                float b = c0.b();
+
+                int y = p0.y;
+                for (int x = std::ceil(p0.x); x <= std::floor(p1.x); x++) {
+                    SDL_SetRenderDrawColor(renderer, r*255, g*255, b*255, 255);
+                    SDL_RenderDrawPoint(renderer, x, y);
+                    r += dr;
+                    g += dg;
+                    b += db;
+                }
             }
         }
         SDL_SetRenderTarget(renderer, NULL);
@@ -229,11 +226,8 @@ struct App {
     void remove_selected() {
         if (selected != SIZE_MAX) {
             triangles.erase(triangles.begin() + selected);
-            if (selected == which_filled) {
-                which_filled = SIZE_MAX;
-                is_filled = false;
-            }
             selected = SIZE_MAX;
+            must_redraw = 1;
         }
     }
 
@@ -245,6 +239,7 @@ struct App {
                 Point p0 = buffered_points[0];
                 Point p1 = buffered_points[1];
                 Point p2 = point;
+                num_buffered_points = 0;
 
                 Rgb c0 = COLOR_CYCLE[color_cycle++];
                 if (color_cycle == COLOR_CYCLE_SIZE) color_cycle = 0;
@@ -255,7 +250,7 @@ struct App {
 
                 selected = triangles.size();
                 triangles.push_back(Triangle(p0, p1, p2, c0, c1, c2));
-                num_buffered_points = 0;
+                must_redraw = 1;
             } else {
                 selected = SIZE_MAX;
                 buffered_points[num_buffered_points++] = point;
@@ -271,27 +266,35 @@ struct App {
     }
 
     void draw(SDL_Renderer *renderer, int mousex, int mousey) {
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-        SDL_SetRenderDrawColor(renderer, 50, 0, 0, 255);
-        if (selected != SIZE_MAX) {
-            SDL_Rect rect = triangles[selected].bounding_box();
-            SDL_RenderDrawRect(renderer, &rect);
-        }
-
-        SDL_SetRenderDrawColor(renderer, edge_color.r()*255,
-            edge_color.g()*255, edge_color.b()*255, 255);
-        for (size_t i = 0; i < triangles.size(); i++) {
-            for (int j = 0; j < 3; j++) {
-                Point p0 = triangles[i].points[j];
-                Point p1 = triangles[i].points[j==2 ? 0 : j+1];
-                SDL_RenderDrawLine(renderer, p0.x, p0.y, p1.x, p1.y);
+        if (draw_edges) {
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+            SDL_SetRenderDrawColor(renderer, edge_color.r()*255,
+                edge_color.g()*255, edge_color.b()*255, 255);
+            for (size_t i = 0; i < triangles.size(); i++) {
+                for (int j = 0; j < 3; j++) {
+                    Point p0 = triangles[i].points[j];
+                    Point p1 = triangles[i].points[j==2 ? 0 : j+1];
+                    SDL_RenderDrawLine(renderer, p0.x, p0.y, p1.x, p1.y);
+                }
             }
         }
         
-        if (is_filled) {
-            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetTextureBlendMode(filled, SDL_BLENDMODE_BLEND);
-            SDL_RenderCopy(renderer, filled, NULL, NULL);
+        if (must_redraw == 0) {
+            fill_all(renderer);
+            must_redraw = -1;
+        } else if (must_redraw > 0) {
+            must_redraw--;
+        }
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
+        SDL_SetTextureBlendMode(filled, SDL_BLENDMODE_ADD);
+        SDL_RenderCopy(renderer, filled, NULL, NULL);
+
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+        if (selected != SIZE_MAX) {
+            SDL_Rect rect = triangles[selected].bounding_box();
+            SDL_RenderDrawRect(renderer, &rect);
         }
 
         SDL_SetRenderDrawColor(renderer, edge_color.r()*255, edge_color.b()*255, edge_color.g()*255, 255);
@@ -309,12 +312,6 @@ struct App {
             SDL_RenderDrawLine(renderer, x0, y0, mousex, mousey);
             SDL_RenderDrawLine(renderer, x1, y1, mousex, mousey);
         }
-
-        SDL_SetRenderDrawColor(renderer, edge_color.r()*255, edge_color.b()*255, edge_color.g()*255, 255);
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-        // for (auto seg : edge_dists) {
-        //     SDL_RenderDrawLine(renderer, seg.first.x, seg.first.y, seg.second.x, seg.second.y);
-        // }
     }
 };
 

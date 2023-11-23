@@ -44,10 +44,13 @@ int main(int, char**) {
             return 0;
         }
 
-        ImGui::Text("Edge Color:");
-        ImGui::Text("\t");
-        ImGui::SameLine();
-        ImGui::ColorEdit3("##edge_color", app.edge_color.rgb, ImGuiColorEditFlags_NoInputs);
+        ImGui::Checkbox("Draw Edges", &app.draw_edges);
+        if (app.draw_edges) {
+            ImGui::Text("Edge Color:");
+            ImGui::Text("\t");
+            ImGui::SameLine();
+            ImGui::ColorEdit3("##edge_color", app.edge_color.rgb, ImGuiColorEditFlags_NoInputs);
+        }
         ImGui::Text("Mode:");
         ImGui::Text("\t");
         ImGui::SameLine();
@@ -60,25 +63,40 @@ int main(int, char**) {
             app.num_buffered_points = 0;
         }
         if (app.selected != SIZE_MAX) {
+            #define COLOR_EDIT_TIMEOUT 10
             Triangle &tri = app.triangles[app.selected];
             ImGui::Text("Selected Triangle: ");
 
             ImGui::Text("\t%4.0f %4.0f", tri.points[0].x, tri.points[0].y);
             ImGui::SameLine();
-            ImGui::ColorEdit3("##color0", tri.colors[0].rgb, ImGuiColorEditFlags_NoInputs);
+            if (ImGui::ColorEdit3("##color0", tri.colors[0].rgb, ImGuiColorEditFlags_NoInputs)) {
+                app.must_redraw = COLOR_EDIT_TIMEOUT;
+            }
 
             ImGui::Text("\t%4.0f %4.0f", tri.points[1].x, tri.points[1].y);
             ImGui::SameLine();
-            ImGui::ColorEdit3("##color1", tri.colors[1].rgb, ImGuiColorEditFlags_NoInputs);
+            if (ImGui::ColorEdit3("##color1", tri.colors[1].rgb, ImGuiColorEditFlags_NoInputs)) {
+                app.must_redraw = COLOR_EDIT_TIMEOUT;
+            }
 
             ImGui::Text("\t%4.0f %4.0f", tri.points[2].x, tri.points[2].y);
             ImGui::SameLine();
-            ImGui::ColorEdit3("##color2", tri.colors[2].rgb, ImGuiColorEditFlags_NoInputs);
+            if (ImGui::ColorEdit3("##color2", tri.colors[2].rgb, ImGuiColorEditFlags_NoInputs)) {
+                app.must_redraw = COLOR_EDIT_TIMEOUT;
+            }
 
             ImGui::Text("\t");
             ImGui::SameLine();
-            if (ImGui::Button("Fill")) {
-                app.fill_selected(renderer);
+            if (ImGui::Button("Up") && app.selected+1 != app.triangles.size()) {
+                std::swap(app.triangles[app.selected], app.triangles[app.selected+1]);
+                app.selected++;
+                app.must_redraw = 1;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Down") && app.selected != 0) {
+                std::swap(app.triangles[app.selected-1], app.triangles[app.selected]);
+                app.selected--;
+                app.must_redraw = 1;
             }
             ImGui::SameLine();
             if (ImGui::Button("Delete")) {
