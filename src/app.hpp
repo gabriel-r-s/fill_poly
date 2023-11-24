@@ -1,5 +1,3 @@
-#include <SDL2/SDL_blendmode.h>
-#include <SDL2/SDL_render.h>
 #include <vector>
 #include <cstdint>
 #include <climits>
@@ -226,7 +224,11 @@ struct App {
     void remove_selected() {
         if (selected != SIZE_MAX) {
             triangles.erase(triangles.begin() + selected);
-            selected = SIZE_MAX;
+            if (triangles.empty()) {
+                selected = SIZE_MAX;
+            } else {
+                selected = (selected + 1) % triangles.size();
+            }
             must_redraw = 1;
         }
     }
@@ -257,10 +259,7 @@ struct App {
             }
             break;
         case AppState_Edit:
-            size_t search = get_tri_by_point(point);
-            if (search != SIZE_MAX) {
-                selected = search;
-            }
+            selected = get_tri_by_point(point);
             break;
         }
     }
@@ -279,10 +278,11 @@ struct App {
             }
         }
         
-        must_redraw--;
-        if (must_redraw == 0) {
-            fill_all(renderer);
-            must_redraw = 0;
+        if (must_redraw >= 0) {
+            if (must_redraw == 0) {
+                fill_all(renderer);
+            }
+            must_redraw--;
         }
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_ADD);
         SDL_SetTextureBlendMode(filled, SDL_BLENDMODE_ADD);
