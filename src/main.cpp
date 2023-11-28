@@ -3,17 +3,18 @@
 #include <cstdio>
 #include <vector>
 
-#define WIDTH 1360
-#define HEIGHT 768
 
 int main(int, char**) {
     SDL_Window *window;
     SDL_Renderer *renderer;
-    setup(&window, &renderer, WIDTH, HEIGHT);
+    setup(&window, &renderer);
     ImGuiIO& io = ImGui::GetIO();
     SDL_Event event;
-    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, WIDTH, HEIGHT);
+    int width, height;
+    SDL_GetRendererOutputSize(renderer, &width, &height);
+    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
     App app(texture);
+
 
     int mousex = 0, mousey = 0;
     for (;;) {
